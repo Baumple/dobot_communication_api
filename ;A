@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
+
+void with_makeraw(struct termios* tty) {
+  cfmakeraw(tty);
+}
+
+void with_manual(struct termios* tty) {
+  tty->c_cflag &= ~PARENB; // disable parity
+  tty->c_cflag &= ~(PARENB | CSTOPB); // disable parity and only one stop bit
+  tty->c_cflag &= ~CSIZE;
+  tty->c_cflag |= CS8; // eight bits per byte
+  tty->c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control
+  tty->c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines
+  tty->c_lflag &= ~ICANON; // disable canonical mode
+  tty->c_lflag &= ~(ECHO | ECHOE | ECHONL | ISIG);
+  tty->c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
+
+  // Disable any special handling of received bytes
+  tty->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
+      |INLCR|IGNCR|ICRNL);
+  // Prevent special interpretation of output bytes (e.g. newline chars)
+  // Prevent conversion of newline to carriage return/line feed
+  tty->c_oflag &= ~(OPOST | ONLCR); 
+
+  tty->c_cc[VTIME] = 10; // wait for 1 second on read
+  tty->c_cc[VMIN] = 0; // block until either amount of data is available
+
+  // baud rate
+  cfsetspeed(tty, B115200);
+  // cfsetospeed(&tty, B115200);
+}
+
+// returns a file descriptor of the serial port
+int init_serial(char* port_name) {
+  struct termios tty; // communication settings
+
+  int serial_port = open(port_name, O_RDWR);
+
+  if (serial_port < 0) {
+    printf("Could not open serial port:(%d) %s\n", errno, strerror(errno));
+    return EXIT_FAILURE;
+  }
+
+  if (tcgetattr(serial_port, &tty) != 0) {
+    printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+  }
+
+  with_makeraw(&tty); // or with `with_manual`
+
+  if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
+    printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+  }
+  return serial_port;
+}
+
+int main(void) {
+  int serial_port = init_serial("/dev/ttyUSB0");
+
+  char[256] buf = {0};
+  int read = read(serial_port); // and write(serial_port)
+
+
+  close(serial_port);
+
+  return EXIT_SUCCESS;
+}
