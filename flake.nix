@@ -12,7 +12,7 @@
     in
     {
       devShells.default = pkgs.mkShell {
-        buildInputs = [ pkgs.gcc ];
+        buildInputs = [ pkgs.gcc pkgs.clang-tools pkgs.valgrind ];
       };
     }
   );
