@@ -4,6 +4,5 @@
 - https://moodle-fbs.schulen-fulda.de/moodle/pluginfile.php/190626/mod_resource/content/1/Dobot-Communication-Protocol-V1.1.5-1.pdf
 
 # TODO:
-- [ ] fix memory leak (free allocated param array)
-- [ ] maybe have the len field of the `Package struct` start at two
+- [x] fix memory leak (free allocated param array) (checked with valgrind)
 - [ ] use temp files instead of normal files for testing
